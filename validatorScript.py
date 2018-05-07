@@ -13,6 +13,15 @@ RESET = "\033[0;0m"
 BOLD    = "\033[;1m"
 REVERSE = "\033[;7m"
 
+#Default file names
+SCHEMA     = "system.xsd"
+DTD        = "system.dtd"
+SCHEMA_XML = "system-xsd.xml"
+DTD_XML    = "system-dtd.xml"
+
+#Path to xmllint
+XMLLINT    = "xmllint"
+
 def printException(errorAt, exception):
     sys.stdout.write(REVERSE + RED)
     print("Error at " + errorAt)
@@ -51,20 +60,31 @@ def unzipFiles(file, toFolder):
 def handleSubfolders(toFolder):
     # handle subfolders in the submission
     # (if the student included a folder in the zip instead of the files directly)
-    files = os.listdir(toFolder)
+    required = True
+    while required:
+        files = os.listdir(toFolder)
 
-    # move all files from the first subdirectories to the top-level 'extract/'
-    for f in files:
-        fullFile = os.path.join(toFolder, f)
-        if os.path.isdir(fullFile):
-            # if the file is a directory, move its contents
-            for sf in os.listdir(fullFile):
-                fullSubfile = os.path.join(toFolder, f, sf)
-                targetFile = os.path.join(toFolder, sf)
-                os.rename(fullSubfile, targetFile)
-            
-            # remove the folder afterwards
-            os.rmdir(fullFile)
+        # move all files from the first subdirectories to the top-level 'extract/'
+        for f in files:
+            fullFile = os.path.join(toFolder, f)
+            if os.path.isdir(fullFile):
+                # if the file is a directory, move its contents
+                for sf in os.listdir(fullFile):
+                    fullSubfile = os.path.join(toFolder, f, sf)
+                    targetFile = os.path.join(toFolder, sf)
+                    os.rename(fullSubfile, targetFile)
+                
+                # remove the folder afterwards
+                os.rmdir(fullFile)
+
+        # if we have more subdirectories, rinse and repeat
+        required = False
+        files = os.listdir(toFolder)
+        for f in files:
+            fullFile = os.path.join(toFolder, f)
+            if os.path.isdir(fullFile):
+                required = True
+                break
 
 def moveFile(filePath, toFolder):
     baseName = os.path.basename(filePath).lower()
@@ -76,13 +96,13 @@ def moveFile(filePath, toFolder):
 def getZipFile(folder):
     files = [os.path.join(folder, name) for name in os.listdir(folder) if (os.path.isfile(os.path.join(folder, name)) and not name.endswith('.DS_Store'))]
     if len(files) == 0:
-        printException("No file in '" + folder +"'!!", "")
+        printException("No file in '%s'!!" % folder, "")
         sys.exit()
 
     if len(files) == 1:
         return files[0]
     else:
-        printException("More than 1 file in '" + folder +"'!!", "")
+        printException("More than 1 file in '%s'!!" % folder, "")
         sys.exit()
 
 def fileExists(file, folder, errorMessage):
@@ -107,10 +127,10 @@ def checkWellFormated(folder, fileName, validationMessage):
 
 
 def runXmllint(arguments):
-    cmd = "xmllint --noout " + arguments
+    cmd = "%s --noout %s" % (XMLLINT, arguments)
     print(cmd)
     child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    cmdOutput = child.communicate()[0]
+    cmdOutput = child.communicate()[0].decode()
     if (child.returncode == 0):
         return ""
     else:
@@ -141,16 +161,22 @@ def extractFilesFromZip(extractFolder, downloadFolder, validatedFolder):
 def validateFiles(extractFolder, solutionFolder):
     printColor("Start validating files", CYAN)
 
-    schemaXsdWellFormated = checkWellFormated(extractFolder, "system.xsd", "0 points for ex. 1 & 2")
-    xmlXsdWellFormated = checkWellFormated(extractFolder,"system-xsd.xml", "0 points for ex. 3")
+    schemaFile    = os.path.join(extractFolder, SCHEMA)
+    schemaXmlFile = os.path.join(extractFolder, SCHEMA_XML)
+    dtdFile       = os.path.join(extractFolder, DTD)
+    dtdXmlFile    = os.path.join(extractFolder, DTD_XML)
+
+    schemaXsdWellFormated = checkWellFormated(extractFolder, SCHEMA, "0 points for ex. 1 & 2")
+    xmlXsdWellFormated = checkWellFormated(extractFolder, SCHEMA_XML, "0 points for ex. 3")
+
     if (xmlXsdWellFormated):
-        args = "--schema "+ os.path.join(extractFolder,"system.xsd") + " " + os.path.join(extractFolder,"system-xsd.xml")
+        args = "--schema %s %s" % (schemaFile, schemaXmlFile)
         validateXML(args, "0 points for ex. 3")
 
-    schemaDtdExists = fileExists("system.dtd", extractFolder, "0 points for ex. 4")
-    xmlDtdWellFormated = checkWellFormated(extractFolder, "system-dtd.xml", "0 points for ex. 5")
+    schemaDtdExists = fileExists(DTD, extractFolder, "0 points for ex. 4")
+    xmlDtdWellFormated = checkWellFormated(extractFolder, DTD_XML, "0 points for ex. 5")
     if (xmlDtdWellFormated):
-        args = "--dtdvalid "+ os.path.join(extractFolder,"system.dtd") + " " + os.path.join(extractFolder,"system-dtd.xml")
+        args = "--dtdvalid %s %s" % (dtdFile, dtdXmlFile)
         validateXML(args, "0 points for ex. 5")
 
 
@@ -158,19 +184,19 @@ def validateFiles(extractFolder, solutionFolder):
     printColor("Attention errors are possible. Specially in the DTD", CYAN)
 
     if (schemaXsdWellFormated):
-        args = "--schema "+ os.path.join(extractFolder,"system.xsd") + " " + os.path.join(solutionFolder,"system-xsd.xml")
+        args = "--schema %s %s" % (os.path.join(extractFolder, SCHEMA), os.path.join(solutionFolder, SCHEMA_XML))
         validateXML(args, "")
 
     if (xmlXsdWellFormated):
-        args = "--schema "+ os.path.join(solutionFolder,"system.xsd") + " " + os.path.join(extractFolder,"system-xsd.xml")
+        args = "--schema %s %s" % (os.path.join(solutionFolder, SCHEMA), os.path.join(extractFolder, SCHEMA_XML))
         validateXML(args, "")
 
     if (schemaDtdExists):
-        args = "--dtdvalid "+ os.path.join(extractFolder,"system.dtd") + " " + os.path.join(solutionFolder,"system-dtd.xml")
+        args = "--dtdvalid %s %s" % (os.path.join(extractFolder, DTD), os.path.join(solutionFolder, DTD_XML))
         validateXML(args, "")
 
     if (xmlDtdWellFormated):
-        args = "--dtdvalid "+ os.path.join(solutionFolder,"system.dtd") + " " + os.path.join(extractFolder,"system-dtd.xml")
+        args = "--dtdvalid %s %s" % (os.path.join(solutionFolder, DTD), os.path.join(extractFolder, DTD_XML))
         validateXML(args, "")
 
 def createFolders(folders):
@@ -179,9 +205,24 @@ def createFolders(folders):
             os.mkdir(f)
 
 def main():
+    global SCHEMA
+    global SCHEMA_XML
+    global DTD
+    global DTD_XML
+    global XMLLINT
     parser = argparse.ArgumentParser()
     parser.add_argument("--extract", "-e", help="extract zipfile and validate schema (default: only validate files)", action="store_true")
+    parser.add_argument("--schema", "-s", help="Set an alternative XML Schema file name (default: system.xsd)")
+    parser.add_argument("--schema-xml", "-S", help="Set an alternative XML file name for XSD validation (default: system-xsd.xml)")
+    parser.add_argument("--dtd", "-d", help="Set an alternative DTD file name (default: system.dtd)")
+    parser.add_argument("--dtd-xml", "-D", help="Set an alternative XML file name for DTD validation (default: system-dtd.xml)")
+    parser.add_argument("--xmllint", "-x", help="Set the name (and path) of the xmllint binary")
     args = parser.parse_args()
+    SCHEMA     = args.schema if args.schema else SCHEMA
+    SCHEMA_XML = args.schema_xml if args.schema_xml else SCHEMA_XML
+    DTD        = args.dtd if args.dtd else DTD
+    DTD_XML    = args.dtd_xml if args.dtd_xml else DTD_XML
+    XMLLINT    = args.xmllint if args.xmllint else XMLLINT
 
     printLogo()
     extractFolder = "./extract/"
@@ -210,6 +251,7 @@ def printLogo():
     print("      #       # #     #     #   #  ####### #        #  #     # #######    #    #     # #   #   ")
     print("#     # #     # #     #      # #   #     # #        #  #     # #     #    #    #     # #    #  ")
     print(" #####   #####  ######        #    #     # ####### ### ######  #     #    #    ####### #     # ")
+    print("")
     print("                                                            by Robert Resch Copyright 2018+ (c)")
     print("                                                              and Maximilian Moser             ")
     print("")

@@ -73,7 +73,7 @@ def handleSubfolders(toFolder):
                     fullSubfile = os.path.join(toFolder, f, sf)
                     targetFile = os.path.join(toFolder, sf)
                     os.rename(fullSubfile, targetFile)
-                
+
                 # remove the folder afterwards
                 os.rmdir(fullFile)
 
@@ -189,14 +189,6 @@ def validateFiles(extractFolder, solutionFolder):
 
     if (xmlXsdWellFormated):
         args = "--schema %s %s" % (os.path.join(solutionFolder, SCHEMA), os.path.join(extractFolder, SCHEMA_XML))
-        validateXML(args, "")
-
-    if (schemaDtdExists):
-        args = "--dtdvalid %s %s" % (os.path.join(extractFolder, DTD), os.path.join(solutionFolder, DTD_XML))
-        validateXML(args, "")
-
-    if (xmlDtdWellFormated):
-        args = "--dtdvalid %s %s" % (os.path.join(solutionFolder, DTD), os.path.join(extractFolder, DTD_XML))
         validateXML(args, "")
 
 def createFolders(folders):

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: iso-8859-15 -*-
 
 import os, shutil, sys, zipfile, subprocess, argparse
@@ -47,8 +48,29 @@ def unzipFiles(file, toFolder):
     except Exception as e:
         printException("Cannot unzip file", e)
 
+def handleSubfolders(toFolder):
+    # handle subfolders in the submission
+    # (if the student included a folder in the zip instead of the files directly)
+    files = os.listdir(toFolder)
+
+    # move all files from the first subdirectories to the top-level 'extract/'
+    for f in files:
+        fullFile = os.path.join(toFolder, f)
+        if os.path.isdir(fullFile):
+            # if the file is a directory, move its contents
+            for sf in os.listdir(fullFile):
+                fullSubfile = os.path.join(toFolder, f, sf)
+                targetFile = os.path.join(toFolder, sf)
+                os.rename(fullSubfile, targetFile)
+            
+            # remove the folder afterwards
+            os.rmdir(fullFile)
+
 def moveFile(filePath, toFolder):
-    newFile = strftime("%Y%m%d%H%M", gmtime()) + ".zip"
+    baseName = os.path.basename(filePath).lower()
+    if baseName.endswith(".zip"):
+        baseName = baseName[:-4]
+    newFile = strftime("%Y%m%d%H%M", gmtime()) + ("-%s.zip" % baseName)
     os.rename(filePath, os.path.join(toFolder, newFile))
 
 def getZipFile(folder):
@@ -112,6 +134,7 @@ def extractFilesFromZip(extractFolder, downloadFolder, validatedFolder):
 
     printColor("unzip file", CYAN)
     unzipFiles(zipFile, extractFolder)
+    handleSubfolders(extractFolder)
     moveFile(zipFile, validatedFolder)
 
 
@@ -150,9 +173,14 @@ def validateFiles(extractFolder, solutionFolder):
         args = "--dtdvalid "+ os.path.join(solutionFolder,"system.dtd") + " " + os.path.join(extractFolder,"system-dtd.xml")
         validateXML(args, "")
 
+def createFolders(folders):
+    for f in folders:
+        if not os.path.exists(f):
+            os.mkdir(f)
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--extract", help="extract zipfile and validate schema (default: only validate files)", action="store_true")
+    parser.add_argument("--extract", "-e", help="extract zipfile and validate schema (default: only validate files)", action="store_true")
     args = parser.parse_args()
 
     printLogo()
@@ -160,6 +188,9 @@ def main():
     downloadFolder = "./download/"
     validatedFolder = "./validated/"
     solutionFolder = "./solution/"
+
+    createFolders([extractFolder, downloadFolder, validatedFolder, solutionFolder])
+
     if args.extract:
         extractFilesFromZip(extractFolder, downloadFolder, validatedFolder)
     else:
@@ -179,7 +210,8 @@ def printLogo():
     print("      #       # #     #     #   #  ####### #        #  #     # #######    #    #     # #   #   ")
     print("#     # #     # #     #      # #   #     # #        #  #     # #     #    #    #     # #    #  ")
     print(" #####   #####  ######        #    #     # ####### ### ######  #     #    #    ####### #     # ")
-    print("                                                            by Robert Resch Copyright 2018 (c) ")
+    print("                                                            by Robert Resch Copyright 2018+ (c)")
+    print("                                                              and Maximilian Moser             ")
     print("")
     print("")
 

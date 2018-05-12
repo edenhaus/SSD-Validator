@@ -60,31 +60,18 @@ def unzipFiles(file, toFolder):
 def handleSubfolders(toFolder):
     # handle subfolders in the submission
     # (if the student included a folder in the zip instead of the files directly)
-    required = True
-    while required:
-        files = os.listdir(toFolder)
-
-        # move all files from the first subdirectories to the top-level 'extract/'
+    for root, dirs, files in os.walk(toFolder):
         for f in files:
-            fullFile = os.path.join(toFolder, f)
-            if os.path.isdir(fullFile):
-                # if the file is a directory, move its contents
-                for sf in os.listdir(fullFile):
-                    fullSubfile = os.path.join(toFolder, f, sf)
-                    targetFile = os.path.join(toFolder, sf)
-                    os.rename(fullSubfile, targetFile)
+            # move all files to top-level
+            filename = os.path.join(root, f)
+            os.rename(filename, os.path.join(toFolder, f))
 
-                # remove the folder afterwards
-                os.rmdir(fullFile)
+    for root, dirs, files in os.walk(toFolder):
+        for d in dirs:
+            # delete subdirectories
+            dirname = os.path.join(root, d)
+            shutil.rmtree(dirname)
 
-        # if we have more subdirectories, rinse and repeat
-        required = False
-        files = os.listdir(toFolder)
-        for f in files:
-            fullFile = os.path.join(toFolder, f)
-            if os.path.isdir(fullFile):
-                required = True
-                break
 
 def moveFile(filePath, toFolder):
     baseName = os.path.basename(filePath).lower()
@@ -180,8 +167,8 @@ def validateFiles(extractFolder, solutionFolder):
         validateXML(args, "0 points for ex. 5")
 
 
-    printColor("Start validating files versus the sample solution (Musterlösung)", CYAN)
-    printColor("Attention errors are possible. Specially in the DTD", CYAN)
+    printColor("Start validating files against the sample solution (Musterloesung)", CYAN)
+    printColor("Attention: errors are possible.", CYAN)
 
     if (schemaXsdWellFormated):
         args = "--schema %s %s" % (os.path.join(extractFolder, SCHEMA), os.path.join(solutionFolder, SCHEMA_XML))

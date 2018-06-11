@@ -1,8 +1,7 @@
-download/
-extract/
-solution/
-validated/
-
+**/download/
+**/extract/
+**/solution/
+**/validated/
 
 
 # Byte-compiled / optimized / DLL files

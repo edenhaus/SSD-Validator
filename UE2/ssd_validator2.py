@@ -10,10 +10,11 @@ download_directory_path = "./download/"
 extracted_directory_path = "./extracted/"
 validated_directory_path = "./validated/"
 solution_directory_path = "./solution/"
-output_directory_path = "./extracted/output/"
+output_directory_path = "output/"
 
 #Path to xmllint
 XMLLINT    = "xmllint"
+DIFF = "diff"
 
 def copy_anything(src, dst):
     try:
@@ -90,8 +91,9 @@ def validate():
     p = subprocess.Popen(["ant run-xquery"], cwd="./extracted", shell=True)
     p.wait()
     print("")
-    print("If no error occured, then " + extracted_directory_path + "output/xquery-out.xml should be created!")
-    print(runXmllint(os.path.join(output_directory_path, "xquery-out.xml")))
+    print("If no error occured, then " + extracted_directory_path + output_directory_path + "/xquery-out.xml should be created!")
+    print(runXmllint(os.path.join(extracted_directory_path, output_directory_path, "xquery-out.xml")))
+    print(runDiff(os.path.join(solution_directory_path, output_directory_path, "xquery-out.xml"),os.path.join(extracted_directory_path, output_directory_path, "xquery-out.xml")))
     sys.stdout.flush()
 
     print("")
@@ -101,8 +103,8 @@ def validate():
     p = subprocess.Popen(["ant run-dry"], cwd="./extracted", shell=True)
     p.wait()
     print("")
-    print("If no error occured, then " + extracted_directory_path + "output/system-out.xml should be created!")
-    print(runXmllint(os.path.join(output_directory_path, "system-out.xml")))
+    print("If no error occured, then " + extracted_directory_path + output_directory_path + "/system-out.xml should be created!")
+    print(runXmllint(os.path.join(extracted_directory_path, output_directory_path, "system-out.xml")))
     sys.stdout.flush()
 
 def runXmllint(arguments):
@@ -115,6 +117,15 @@ def runXmllint(arguments):
     else:
         return cmdOutput
 
+def runDiff(solutionFile, studentFile):
+    cmd = "%s %s %s" % (DIFF, solutionFile, studentFile)
+    print(cmd)
+    child = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    cmdOutput = child.communicate()[0].decode()
+    if (child.returncode == 0):
+        return ""
+    else:
+        return cmdOutput
 
 def main(argv):
    pars_args(argv)

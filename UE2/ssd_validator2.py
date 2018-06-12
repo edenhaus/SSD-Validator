@@ -5,7 +5,6 @@ import shutil, errno
 import subprocess
 
 
-
 download_directory_path = "./download/"
 extracted_directory_path = "./extracted/"
 validated_directory_path = "./validated/"
@@ -36,11 +35,9 @@ def empty_directory(directory_path):
             shutil.rmtree(path)
 
 def copy_solution_context():
-    context = ["build", "build.xml", "lib"]
+    context = ["build", "build.xml", "lib", "resources"]
     for dir_or_file in context:
         copy_anything(solution_directory_path + dir_or_file, extracted_directory_path + dir_or_file)
-
-
 
 def pars_args(argv):
     inputfile = ''

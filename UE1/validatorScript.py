@@ -14,10 +14,10 @@ BOLD    = "\033[;1m"
 REVERSE = "\033[;7m"
 
 #Default file names
-SCHEMA     = "system.xsd"
-DTD        = "system.dtd"
-SCHEMA_XML = "system-xsd.xml"
-DTD_XML    = "system-dtd.xml"
+SCHEMA     = "library.xsd"
+DTD        = "library.dtd"
+SCHEMA_XML = "library-xsd.xml"
+DTD_XML    = "library-dtd.xml"
 
 #Path to xmllint
 XMLLINT    = "xmllint"
